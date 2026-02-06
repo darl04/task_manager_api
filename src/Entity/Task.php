@@ -2,31 +2,27 @@
 
 namespace App\Entity;
 
-use App\Repository\TaskRepository;
-use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
-
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
+use App\Repository\TaskRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(),
         new GetCollection(),
         new Post(),
+        new Get(),
         new Put(),
+        new Patch(),
         new Delete()
-    ],
-    normalizationContext: [
-        'groups' => ['category:read']
-    ],
-    denormalizationContext: [
-        'groups' => ['category:write']
     ]
 )]
 class Task
@@ -34,20 +30,26 @@ class Task
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['category:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['category:read', 'category:write'])]
+    #[Assert\NotBlank(message: "Title cannot be blank")]
     private ?string $title = null;
 
-    #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['category:read', 'category:write'])]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups(['category:read'])]
-    private ?\DateTime $createAt = null;
+    private ?bool $isCompleted = false;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private ?\DateTimeInterface $createdAt = null;
+
+    public function __construct()
+    {
+        $this->isCompleted = false;
+        $this->createdAt = new \DateTime();
+    }
 
     public function getId(): ?int
     {
@@ -62,7 +64,6 @@ class Task
     public function setTitle(string $title): static
     {
         $this->title = $title;
-
         return $this;
     }
 
@@ -71,22 +72,31 @@ class Task
         return $this->description;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
-    public function getCreateAt(): ?\DateTime
+    public function isCompleted(): ?bool
     {
-        return $this->createAt;
+        return $this->isCompleted;
     }
 
-    public function setCreateAt(\DateTime $createAt): static
+    public function setIsCompleted(bool $isCompleted): static
     {
-        $this->createAt = $createAt;
+        $this->isCompleted = $isCompleted;
+        return $this;
+    }
 
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeInterface $createdAt): static
+    {
+        $this->createdAt = $createdAt;
         return $this;
     }
 }
